@@ -55,9 +55,15 @@ app.post("/login", (req, res) => {
   const { email, password } = req.body;
   UserModel.findOne({ email: email }).then((user) => {
     if (user) {
+      if (user.lockedUntil && user.lockedUntil > Date.now()) {
+        // Account is locked
+        const remainingTime = new Date(user.lockedUntil - Date.now());
+        return res.status(403).json({
+          message: `Account is locked. Please try again after ${remainingTime.getHours()} hours, ${remainingTime.getMinutes()} minutes, and ${remainingTime.getSeconds()} seconds.`,
+        });
+      }
       bcrypt.compare(password, user.password, (err, response) => {
         if (response) {
-          // Reset login attempts if login is successful
           UserModel.findOneAndUpdate({ email }, { loginAttempts: 0 })
             .then(() => {
               const token = jwt.sign(
@@ -79,7 +85,6 @@ app.post("/login", (req, res) => {
               });
             });
         } else {
-          // Increment login attempts and check if account should be locked
           UserModel.findOneAndUpdate(
             { email },
             { $inc: { loginAttempts: 1 }, lastLoginAttempt: Date.now() },
@@ -89,7 +94,7 @@ app.post("/login", (req, res) => {
               if (updatedUser.loginAttempts >= 5) {
                 const lockExpiry = new Date(
                   Date.now() + 24 * 60 * 60 * 1000
-                ); // Lock for 24 hours
+                ); 
                 UserModel.findOneAndUpdate(
                   { email },
                   { lockedUntil: lockExpiry }
