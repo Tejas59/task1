@@ -17,7 +17,7 @@ npm-debug.log*
 .env
 
 # Build output
-/build
+
 
 # IDE and editor files
 .idea/
@@ -26,7 +26,6 @@ npm-debug.log*
 *.sublime-workspace
 
 # Compiled binary addons (like node-sass)
-/build/
 
 # Dependency directories
 /jspm_packages/

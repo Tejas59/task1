@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const UserModel = require("./models/User.js");
 
+
 const app = express();
 
 app.use(express.json());
@@ -19,7 +20,7 @@ app.use(cors({
 app.use(cookieParser());
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/auth_two", {
+  .connect("mongodb+srv://tejasvaidya59:mRfp17JPirHGDnpw@cluster0.ut3opzj.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -127,6 +128,7 @@ app.post("/login", (req, res) => {
     }
   });
 });
+
 
   
 const PORT = process.env.PORT || 3001;
