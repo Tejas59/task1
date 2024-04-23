@@ -12,7 +12,7 @@ const app = express();
 app.use(express.json());
 
 app.use(cors({
-    origin:["https://authmernfrontend-git-main-tejas59s-projects.vercel.app/"],
+    origin:["https://authmernfrontend-git-main-tejas59s-projects.vercel.app"],
     methods:["GET", "post"],
     credentials: true
 }));
