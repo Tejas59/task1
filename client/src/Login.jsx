@@ -42,7 +42,7 @@ const Login = () => {
     setLoginAttempts(loginAttempts + 1); // Increment login attempts
 
     try {
-      const { data } = await axios.post("https://authmern-git-main-tejas59s-projects.vercel.app", {
+      const { data } = await axios.post("http://localhost:3001/", {
         email,
         password,
       });

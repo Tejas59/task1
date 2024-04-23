@@ -13,10 +13,10 @@ function Signup() {
   const handleSubmit = (e) => {
     e.preventDefault();
     axios
-      .post("https://authmern-git-main-tejas59s-projects.vercel.app/register", { name, email, password })
+      .post("http://localhost:3001/register", { name, email, password })
 
       .then((res) => {
-        navigate('/login');
+        navigate('/');
       })
       .catch((err) => console.log(err));
   };
