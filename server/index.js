@@ -56,11 +56,10 @@ app.post("/", (req, res) => {
   const { email, password } = req.body;
   UserModel.findOne({ email: email }).then((user) => {
     if (user) {
-      if (user.lockedUntil && user.lockedUntil > Date.now()) {
-        // Account is locked
-        const remainingTime = new Date(user.lockedUntil - Date.now());
+     if (user.lockedUntil && user.lockedUntil > new Date()) { // Use new Date() to get current UTC timestamp
+        const remainingTime = new Date(user.lockedUntil - new Date()); // Calculate remaining time using UTC timestamps
         return res.status(403).json({
-          message: `Account is locked. Please try again after ${remainingTime.getHours()} hours, ${remainingTime.getMinutes()} minutes, and ${remainingTime.getSeconds()} seconds.`,
+          message: `Account is locked. Please try again after ${remainingTime.getUTCHours()} hours, ${remainingTime.getUTCMinutes()} minutes, and ${remainingTime.getUTCSeconds()} seconds.`,
         });
       }
       bcrypt.compare(password, user.password, (err, response) => {
@@ -98,7 +97,10 @@ app.post("/", (req, res) => {
                 ); 
                 UserModel.findOneAndUpdate(
                   { email },
-                  { lockedUntil: lockExpiry }
+                  { 
+                    loginAttempts: 0, 
+                    lockedUntil: lockExpiry 
+                  }
                 )
                   .then(() => {
                     return res.status(403).json({
