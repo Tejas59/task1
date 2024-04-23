@@ -17,6 +17,7 @@ npm-debug.log*
 .env
 
 # Build output
+/build
 
 
 # IDE and editor files
