@@ -19,36 +19,46 @@ app.use(cors({
 
 app.use(cookieParser());
 
-mongoose
-  .connect("mongodb+srv://tejasvaidya59:mRfp17JPirHGDnpw@cluster0.ut3opzj.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+
 
 app.post("/register", (req, res) => {
   const { name, email, password } = req.body;
 
   console.log("Received registration request:", { name, email, password });
 
-  bcrypt
-    .hash(password, 10)
-    .then((hash) => {
-      console.log("Generated hash:", hash);
-      UserModel.create({ name, email, password: hash })
-        .then((user) => {
-          console.log("User registered successfully:", user);
-          res.json("success");
-        })
-        .catch((err) => {
-          console.error("Error registering user:", err);
-          res.status(500).json({ error: "Error registering user" });
-        });
+  UserModel.findOne({ email: email })
+    .then((existingUser) => {
+      if (existingUser) {
+        return res.status(400).json({ error: "Email already registered" });
+      } else {
+        // Validate password length
+        if (password.length < 5) {
+          return res.status(400).json({ error: "Password must be at least 5 characters long" });
+        }
+
+        bcrypt
+          .hash(password, 10)
+          .then((hash) => {
+            console.log("Generated hash:", hash);
+            UserModel.create({ name, email, password: hash })
+              .then((user) => {
+                console.log("User registered successfully:", user);
+                res.json("success");
+              })
+              .catch((err) => {
+                console.error("Error registering user:", err);
+                res.status(500).json({ error: "Error registering user" });
+              });
+          })
+          .catch((err) => {
+            console.error("Error hashing password:", err);
+            res.status(500).json({ error: "Error hashing password" });
+          });
+      }
     })
     .catch((err) => {
-      console.error("Error hashing password:", err);
-      res.status(500).json({ error: "Error hashing password" });
+      console.error("Error checking existing user:", err);
+      res.status(500).json({ error: "Internal server error" });
     });
 });
 
@@ -132,8 +142,25 @@ app.post("/", (req, res) => {
 });
 
 
-  
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+mongoose
+  .connect("mongodb+srv://tejasvaidya59:mRfp17JPirHGDnpw@cluster0.ut3opzj.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0", {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("MongoDB connected")
+    return UserModel.collection.indexes()
+  })
+  .then((indexes) => {
+    const nameIndex = indexes.find((index) => index.key.name === 1);
+    if (nameIndex) {
+      return UserModel.collection.dropIndex('name_1');
+    }
+  })
+  .then(() => {
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  })
+  .catch((err) => console.error("Error:", err));

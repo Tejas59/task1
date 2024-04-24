@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State to toggle password visibility
   const navigate = useNavigate();
 
   const [loginAttempts, setLoginAttempts] = useState(0); 
@@ -98,14 +99,23 @@ const Login = () => {
           </div>
           <div className="mb-3">
             <label htmlFor="email"><strong>Password</strong></label>
-            <input
-              type="password"
-              placeholder="Enter Password"
-              autoComplete="off"
-              name="password"
-              className="form-control rounded-0"
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="input-group">
+              <input
+                type={isPasswordVisible ? "text" : "password"}
+                placeholder="Enter Password"
+                autoComplete="off"
+                name="password"
+                className="form-control rounded-0"
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                className="btn btn-outline-secondary"
+                type="button"
+                onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+              >
+                <i className={`bi ${isPasswordVisible ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+              </button>
+            </div>
           </div>
           <button type="submit" className="btn btn-success w-100 rounded-0">Login</button>
           <p>Don't have an account</p>
