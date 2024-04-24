@@ -21,125 +21,82 @@ app.use(cookieParser());
 
 
 
-app.post("/register", (req, res) => {
+app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
-
   console.log("Received registration request:", { name, email, password });
 
-  UserModel.findOne({ email: email })
-    .then((existingUser) => {
-      if (existingUser) {
-        return res.status(400).json({ error: "Email already registered" });
-      } else {
-        // Validate password length
-        if (password.length < 5) {
-          return res.status(400).json({ error: "Password must be at least 5 characters long" });
-        }
-
-        bcrypt
-          .hash(password, 10)
-          .then((hash) => {
-            console.log("Generated hash:", hash);
-            UserModel.create({ name, email, password: hash })
-              .then((user) => {
-                console.log("User registered successfully:", user);
-                res.json("success");
-              })
-              .catch((err) => {
-                console.error("Error registering user:", err);
-                res.status(500).json({ error: "Error registering user" });
-              });
-          })
-          .catch((err) => {
-            console.error("Error hashing password:", err);
-            res.status(500).json({ error: "Error hashing password" });
-          });
-      }
-    })
-    .catch((err) => {
-      console.error("Error checking existing user:", err);
-      res.status(500).json({ error: "Internal server error" });
-    });
-});
-
-app.post("/", (req, res) => {
-  const { email, password } = req.body;
-  UserModel.findOne({ email: email }).then((user) => {
-    if (user) {
-     if (user.lockedUntil && user.lockedUntil > new Date()) { // Use new Date() to get current UTC timestamp
-        const remainingTime = new Date(user.lockedUntil - new Date()); // Calculate remaining time using UTC timestamps
-        return res.status(403).json({
-          message: `Account is locked. Please try again after ${remainingTime.getUTCHours()} hours, ${remainingTime.getUTCMinutes()} minutes, and ${remainingTime.getUTCSeconds()} seconds.`,
-        });
-      }
-      bcrypt.compare(password, user.password, (err, response) => {
-        if (response) {
-          UserModel.findOneAndUpdate({ email }, { loginAttempts: 0 })
-            .then(() => {
-              const token = jwt.sign(
-                { email: user.email, role: user.role },
-                "jwt-secret-key",
-                { expiresIn: "1d" }
-              );
-              res.cookie("token", token);
-              return res.json({
-                status: "success",
-                role: user.role,
-                name: user.name,
-              });
-            })
-            .catch((err) => {
-              console.error("Error updating login attempts:", err);
-              return res.status(500).json({
-                error: "Internal server error",
-              });
-            });
-        } else {
-          UserModel.findOneAndUpdate(
-            { email },
-            { $inc: { loginAttempts: 1 }, lastLoginAttempt: Date.now() },
-            { new: true }
-          )
-            .then((updatedUser) => {
-              if (updatedUser.loginAttempts >= 5) {
-                const lockExpiry = new Date(
-                  Date.now() + 24 * 60 * 60 * 1000
-                ); 
-                UserModel.findOneAndUpdate(
-                  { email },
-                  { 
-                    loginAttempts: 0, 
-                    lockedUntil: lockExpiry 
-                  }
-                )
-                  .then(() => {
-                    return res.status(403).json({
-                      message: "Account locked, please try again later.",
-                    });
-                  })
-                  .catch((err) => {
-                    console.error("Error locking account:", err);
-                    return res.status(500).json({
-                      error: "Internal server error",
-                    });
-                  });
-              } else {
-                return res.json("The password is incorrect");
-              }
-            })
-            .catch((err) => {
-              console.error("Error updating login attempts:", err);
-              return res.status(500).json({
-                error: "Internal server error",
-              });
-            });
-        }
-      });
-    } else {
-      return res.json("No record existed");
+  try {
+    const existingUser = await UserModel.findOne({ email: email });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email already registered" });
     }
-  });
+
+    if (password.length < 5) {
+      return res.status(400).json({ error: "Password must be at least 5 characters long" });
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    console.log("Generated hash:", hash);
+    const user = await UserModel.create({ name, email, password: hash });
+    console.log("User registered successfully:", user);
+    return res.json("success");
+  } catch (err) {
+    console.error("Error registering user:", err);
+    return res.status(500).json({ error: "Error registering user" });
+  }
 });
+
+app.post("/", async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await UserModel.findOne({ email: email });
+    if (!user) {
+      return res.status(404).json({ message: "No record found for the provided email." });
+    }
+
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      const remainingTime = new Date(user.lockedUntil - new Date());
+      return res.status(403).json({
+        message: `Account is locked. Please try again after ${remainingTime.getUTCHours()} hours, ${remainingTime.getUTCMinutes()} minutes, and ${remainingTime.getUTCSeconds()} seconds.`,
+      });
+    }
+
+    console.log('Before bcrypt.compare:', email, password);
+    const response = await bcrypt.compare(password, user.password);
+    console.log('After bcrypt.compare:', response);
+
+    if (response) {
+      await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lastLoginAttempt: new Date() });
+      const token = jwt.sign({ email: user.email, role: user.role }, "jwt-secret-key", { expiresIn: "1d" });
+      res.cookie("token", token);
+      return res.json({ status: "success", role: user.role, name: user.name });
+    } else {
+      const now = new Date();
+      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const updatedUser = await UserModel.findOneAndUpdate(
+        { email, lastLoginAttempt: { $gt: twentyFourHoursAgo } },
+        { $inc: { loginAttempts: 1 }, lastLoginAttempt: now },
+        { new: true }
+      );
+
+      if (updatedUser && updatedUser.loginAttempts >= 5) {
+        const lockExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lockedUntil: lockExpiry });
+        return res.status(403).json({
+          message: "Your account is locked due to multiple failed login attempts within the last 24 hours. Please try again later.",
+          lockedUntil: lockExpiry,
+        });
+      } else {
+        return res.status(401).json({ message: "Incorrect email or password. Please try again." });
+      }
+    }
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 
 
 mongoose

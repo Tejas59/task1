@@ -5,13 +5,14 @@ import { Link, useNavigate } from "react-router-dom";
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false); // State to toggle password visibility
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigate = useNavigate();
 
-  const [loginAttempts, setLoginAttempts] = useState(0); 
+  const [loginAttempts, setLoginAttempts] = useState(0);
   const [isAccountLocked, setIsAccountLocked] = useState(false);
-  const [lockedUntil, setLockedUntil] = useState(null); 
-  const [loginError, setLoginError] = useState(null); // State to store login error message
+  const [lockedUntil, setLockedUntil] = useState(null);
+  const [loginError, setLoginError] = useState(null);
+
 
   useEffect(() => {
     const storedLockedUntil = localStorage.getItem('lockedUntil');
@@ -40,35 +41,44 @@ const Login = () => {
       }
     }
 
-    setLoginAttempts(loginAttempts + 1); // Increment login attempts
-
     try {
       const { data } = await axios.post("http://localhost:3001/", {
         email,
         password,
       });
-
+    
       if (data.status === "success") {
         localStorage.setItem('name', data.name);
         navigate('/home');
       } else if (data.status === "locked") {
         setIsAccountLocked(true);
-        setLockedUntil(new Date(data.lockedUntil)); 
-        alert("Your account is locked due to multiple failed login attempts. Please try again later.");
-      } else {
-        // Display error message for incorrect password
-        setLoginError("Incorrect email or password. Please try again.");
-        console.log("Login failed:", data.message); 
-      }
-    } catch (err) {
-      // Handle 403 Forbidden error
-      if (err.response && err.response.status === 403) {
+        setLockedUntil(new Date(data.lockedUntil));
         setLoginError("Your account is locked due to multiple failed login attempts. Please try again later.");
+      } else if (data.message === "Email not found.") { // Handle email not found error
+        setLoginError("Email not found. Please check your email and try again.");
+      } else if (data.message === "Incorrect password.") { // Handle incorrect password error
+        setLoginError("Incorrect password. Please try again.");
       } else {
         setLoginError("An unexpected error occurred. Please try again later.");
+        console.log("Login failed:", data.message);
       }
-      console.error("Error logging in:", err);
+    } catch (err) {
+      // Handle other unexpected errors
+      if (err.response && err.response.status === 401) {
+        setLoginAttempts(loginAttempts + 1); // Increment login attempts
+        setLoginError("Incorrect password. Please try again.");
+      } else if (err.response && err.response.status === 403) {
+        setLoginError("Your account is locked due to multiple failed login attempts. Please try again later.");
+      }
+      else if(err.response && err.response.status === 404){
+        setLoginError("Email not found. Please check your email and try again.");
+      } 
+      else {
+        setLoginError("An unexpected error occurred. Please try again later.");
+        console.error("Error logging in:", err);
+      }
     }
+    
   };
 
   return (
