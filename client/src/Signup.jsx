@@ -11,7 +11,7 @@ function Signup() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Check password length
@@ -20,18 +20,16 @@ function Signup() {
       return;
     }
 
-    axios
-      .post("http://localhost:3001/register", { name, email, password })
-      .then((res) => {
-        navigate("/");
-      })
-      .catch((err) => {
-        if (err.response && err.response.data.error === "Email already registered") {
-          setError("Email already registered"); // Set error message
-        } else {
-          console.error("Error registering user:", err);
-        }
-      });
+    try {
+      const res = await axios.post("http://localhost:3001/register", { name, email, password });
+      navigate("/");
+    } catch (err) {
+      if (err.response && err.response.data.error === "Email already registered") {
+        setError("Email already registered"); // Set error message
+      } else {
+        console.error("Error registering user:", err);
+      }
+    }
   };
 
   return (
