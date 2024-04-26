@@ -54,11 +54,11 @@ const Login = () => {
         setIsAccountLocked(true);
         setLockedUntil(new Date(data.lockedUntil));
         setLoginError("Your account is locked due to multiple failed login attempts. Please try again later.");
-      } else if (data.message === "Email not found.") { // Handle email not found error
+      } else if (data.message === "No record found for the provided email.vaidya") { // Handle email not found error
         setLoginError("Email not found. Please check your email and try again.");
-      } else if (data.message === "Incorrect password.") { // Handle incorrect password error
-        setLoginError("Incorrect password. Please try again.");
-      } else {
+    } else if (data.message === "Incorrect email or password. Please try again.") { // Handle incorrect password error
+        setLoginError("Incorrect password. Please try again.Tejas");
+    } else {
         setLoginError("An unexpected error occurred. Please try again later.");
         console.log("Login failed:", data.message);
       }

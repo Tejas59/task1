@@ -55,7 +55,7 @@ app.post("/", async (req, res) => {
       return res.status(404).json({ message: "No record found for the provided email." });
     }
 
-    if (user.lockedUntil && user.lockedUntil > new Date()) {
+    if (user.lockedUntil  > new Date()) {
       const remainingTime = new Date(user.lockedUntil - new Date());
       return res.status(403).json({
         message: `Account is locked. Please try again after ${remainingTime.getUTCHours()} hours, ${remainingTime.getUTCMinutes()} minutes, and ${remainingTime.getUTCSeconds()} seconds.`,
@@ -69,6 +69,7 @@ app.post("/", async (req, res) => {
     if (response) {
       await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lastLoginAttempt: new Date() });
       const token = jwt.sign({ email: user.email, role: user.role }, "jwt-secret-key", { expiresIn: "1d" });
+      console.log('JWT:', token);
       res.cookie("token", token);
       return res.json({ status: "success", role: user.role, name: user.name });
     } else {
