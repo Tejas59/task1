@@ -31,10 +31,6 @@ app.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Email already registered" });
     }
 
-    if (password.length < 5) {
-      return res.status(400).json({ error: "Password must be at least 5 characters long" });
-    }
-
     const hash = await bcrypt.hash(password, 10);
     console.log("Generated hash:", hash);
     const user = await UserModel.create({ name, email, password: hash });

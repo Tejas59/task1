@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -8,23 +8,10 @@ const Login = () => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigate = useNavigate();
 
-  const [loginAttempts, setLoginAttempts] = useState(0);
   const [isAccountLocked, setIsAccountLocked] = useState(false);
   const [lockedUntil, setLockedUntil] = useState(null);
   const [loginError, setLoginError] = useState(null);
 
-
-  useEffect(() => {
-    const storedLockedUntil = localStorage.getItem('lockedUntil');
-    if (storedLockedUntil) {
-      const now = new Date();
-      const lockExpiry = new Date(storedLockedUntil);
-      if (now < lockExpiry) {
-        setIsAccountLocked(true);
-        setLockedUntil(lockExpiry);
-      }
-    }
-  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +21,6 @@ const Login = () => {
       if (now >= lockedUntil) {
         setIsAccountLocked(false);
         setLockedUntil(null);
-        setLoginAttempts(0); // Reset attempts after lock expiry
       } else {
         alert("Your account is locked due to multiple failed login attempts. Please try again later.");
         return;
@@ -65,7 +51,6 @@ const Login = () => {
     } catch (err) {
       // Handle other unexpected errors
       if (err.response && err.response.status === 401) {
-        setLoginAttempts(loginAttempts + 1); // Increment login attempts
         setLoginError("Incorrect password. Please try again.");
       } else if (err.response && err.response.status === 403) {
         setLoginError("Your account is locked due to multiple failed login attempts. Please try again later.");
