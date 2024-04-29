@@ -2,7 +2,7 @@ import React, { useState} from 'react';
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 
-const Login = () => {
+const Login = ({setIsLoggedIn}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -35,6 +35,7 @@ const Login = () => {
     
       if (data.status === "success") {
         localStorage.setItem('name', data.name);
+        setIsLoggedIn(true);
         navigate('/home');
       } else if (data.status === "locked") {
         setIsAccountLocked(true);

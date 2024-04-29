@@ -2,8 +2,6 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
 const UserModel = require("./models/User.js");
 
 
@@ -17,7 +15,7 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(cookieParser());
+
 
 
 
@@ -65,10 +63,7 @@ app.post("/", async (req, res) => {
 
     if (response) {
       await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lastLoginAttempt: new Date() });
-      const token = jwt.sign({ email: user.email, role: user.role }, "jwt-secret-key", { expiresIn: "1d" });
-      console.log('JWT:', token);
-      res.cookie("token", token);
-      return res.json({ status: "success", role: user.role, name: user.name });
+      return res.json({ status: "success", name: user.name });
     }else if (user.lastLoginAttempt === null) {
       const now = new Date();
       await UserModel.findOneAndUpdate(
@@ -104,6 +99,7 @@ app.post("/", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 
