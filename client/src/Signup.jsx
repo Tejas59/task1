@@ -7,7 +7,7 @@ function Signup() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // State variable for error message
+  const [error, setError] = useState(""); 
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigate = useNavigate();
 
@@ -24,7 +24,7 @@ function Signup() {
       const res = await axios.post("http://localhost:3001/register", { name, email, password });
       navigate("/");
     } catch (err) {
-      if (err.response && err.response.data.error === "Email already registered") {
+      if (err.response && err.response.status === 400) {
         setError("Email already registered"); // Set error message
       } else {
         console.error("Error registering user:", err);

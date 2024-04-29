@@ -42,6 +42,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
+
 app.post("/", async (req, res) => {
   const { email, password } = req.body;
 
@@ -70,7 +71,7 @@ app.post("/", async (req, res) => {
       return res.json({ status: "success", role: user.role, name: user.name });
     }else if (user.lastLoginAttempt === null) {
       const now = new Date();
-      const nullUser = await UserModel.findOneAndUpdate(
+      await UserModel.findOneAndUpdate(
         { email },
         { $inc: { loginAttempts: 1 }, lastLoginAttempt: now },
         { new: true }

@@ -40,14 +40,7 @@ const Login = () => {
         setIsAccountLocked(true);
         setLockedUntil(new Date(data.lockedUntil));
         setLoginError("Your account is locked due to multiple failed login attempts. Please try again later.");
-      } else if (data.message === "No record found for the provided email.") { // Handle email not found error
-        setLoginError("Email not found. Please check your email and try again.");
-    } else if (data.message === "Incorrect email or password. Please try again.") { // Handle incorrect password error
-        setLoginError("Incorrect password. Please try again.");
-    } else {
-        setLoginError("An unexpected error occurred. Please try again later.");
-        console.log("Login failed:", data.message);
-      }
+      } 
     } catch (err) {
       // Handle other unexpected errors
       if (err.response && err.response.status === 401) {
@@ -70,11 +63,6 @@ const Login = () => {
     <div className="d-flex justify-content-center align-items-center bg-info vh-100">
       <div className="bg-white p-3 rounded w-25">
         <h2>Login</h2>
-        {isAccountLocked && ( // Display alert only if account is locked
-          <div className="alert alert-danger" role="alert">
-            Your account is locked. Please try again later.
-          </div>
-        )}
         {loginError && ( // Display login error message
           <div className="alert alert-danger" role="alert">
             {loginError}
