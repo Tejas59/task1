@@ -1,4 +1,3 @@
-// App.js
 import Home from "./Home";
 import React, { useState } from "react";
 import Login from "./Login";

@@ -8,24 +8,11 @@ const Login = ({setIsLoggedIn}) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const navigate = useNavigate();
 
-  const [isAccountLocked, setIsAccountLocked] = useState(false);
-  const [lockedUntil, setLockedUntil] = useState(null);
   const [loginError, setLoginError] = useState(null);
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (isAccountLocked) {
-      const now = new Date();
-      if (now >= lockedUntil) {
-        setIsAccountLocked(false);
-        setLockedUntil(null);
-      } else {
-        alert("Your account is locked due to multiple failed login attempts. Please try again later.");
-        return;
-      }
-    }
 
     try {
       const { data } = await axios.post("http://localhost:3001/", {
@@ -37,13 +24,9 @@ const Login = ({setIsLoggedIn}) => {
         localStorage.setItem('name', data.name);
         setIsLoggedIn(true);
         navigate('/home');
-      } else if (data.status === "locked") {
-        setIsAccountLocked(true);
-        setLockedUntil(new Date(data.lockedUntil));
-        setLoginError("Your account is locked due to multiple failed login attempts. Please try again later.");
       } 
+      
     } catch (err) {
-      // Handle other unexpected errors
       if (err.response && err.response.status === 401) {
         setLoginError("Incorrect password. Please try again.");
       } else if (err.response && err.response.status === 403) {

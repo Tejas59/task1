@@ -16,14 +16,12 @@ app.use(cors({
 }));
 
 
-
-
-
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
   console.log("Received registration request:", { name, email, password });
 
   try {
+    
     const existingUser = await UserModel.findOne({ email: email });
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
@@ -64,7 +62,7 @@ app.post("/", async (req, res) => {
     if (response) {
       await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lastLoginAttempt: new Date() });
       return res.json({ status: "success", name: user.name });
-    }else if (user.lastLoginAttempt === null) {
+    }else if (user.lastLoginAttempt === null||user.lastLoginAttempt <  new Date(Date.now() - 24 * 60 * 60 * 1000)) {
       const now = new Date();
       await UserModel.findOneAndUpdate(
         { email },
