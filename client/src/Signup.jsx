@@ -25,7 +25,7 @@ function Signup() {
       navigate("/");
     } catch (err) {
       if (err.response && err.response.status === 400) {
-        setError("Email already registered"); // Set error message
+        setError("Email already registered"); 
       } else {
         console.error("Error registering user:", err);
       }

@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
 const UserModel = require("./models/User.js");
-
+const LoginAttemptModel = require("./models/Attempt.js");
 
 const app = express();
 
@@ -21,7 +21,7 @@ app.post("/register", async (req, res) => {
   console.log("Received registration request:", { name, email, password });
 
   try {
-    
+
     const existingUser = await UserModel.findOne({ email: email });
     if (existingUser) {
       return res.status(400).json({ error: "Email already registered" });
@@ -48,7 +48,7 @@ app.post("/", async (req, res) => {
       return res.status(404).json({ message: "No record found for the provided email." });
     }
 
-    if (user.lockedUntil  > new Date()) {
+    if (user.lockedUntil > new Date()) {
       const remainingTime = new Date(user.lockedUntil - new Date());
       return res.status(403).json({
         message: `Account is locked. Please try again after ${remainingTime.getUTCHours()} hours, ${remainingTime.getUTCMinutes()} minutes, and ${remainingTime.getUTCSeconds()} seconds.`,
@@ -60,33 +60,28 @@ app.post("/", async (req, res) => {
     console.log('After bcrypt.compare:', response);
 
     if (response) {
-      await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lastLoginAttempt: new Date() });
+      await LoginAttemptModel.deleteMany({ email, outcome: 'failure' });
       return res.json({ status: "success", name: user.name });
-    }else if (user.lastLoginAttempt === null||user.lastLoginAttempt <  new Date(Date.now() - 24 * 60 * 60 * 1000)) {
+    } else {
       const now = new Date();
-      await UserModel.findOneAndUpdate(
-        { email },
-        { $inc: { loginAttempts: 1 }, lastLoginAttempt: now },
-        { new: true }
-      );
-    
-      return res.status(401).json({ message: "Incorrect email or password. Please try again." });
-    }
-    else {
-      const now = new Date();
-      const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-      const updatedUser = await UserModel.findOneAndUpdate(
-        { email, lastLoginAttempt: { $gt: twentyFourHoursAgo } },
-        { $inc: { loginAttempts: 1 }, lastLoginAttempt: now },
-        { new: true }
-      );
+      const nowISO = now.toISOString();
+      // Log the failed attempt
+      await LoginAttemptModel.create({ email, timestamp: nowISO, outcome: 'failure' });
 
-      if (updatedUser && updatedUser.loginAttempts >= 5) {
+      const failedAttemptsCount = await LoginAttemptModel.countDocuments({
+        email,
+        timestamp: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+        outcome: 'failure'
+      });
+
+
+      if (failedAttemptsCount >= 5) {
+        // Lock the account
         const lockExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        await UserModel.findOneAndUpdate({ email }, { loginAttempts: 0, lockedUntil: lockExpiry });
+        await UserModel.findOneAndUpdate({ email }, { lockedUntil: lockExpiry });
         return res.status(403).json({
           message: "Your account is locked due to multiple failed login attempts within the last 24 hours. Please try again later.",
-          lockedUntil: lockExpiry,
+          lockedUntil: lockExpiry
         });
       } else {
         return res.status(401).json({ message: "Incorrect email or password. Please try again." });
@@ -100,21 +95,13 @@ app.post("/", async (req, res) => {
 
 
 
-
 mongoose
-  .connect("mongodb+srv://tejasvaidya59:mRfp17JPirHGDnpw@cluster0.ut3opzj.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0", {
+  .connect("mongodb+srv://tejasvaidya59:mRfp17JPirHGDnpw@cluster0.ut3opzj.mongodb.net/temp?retryWrites=true&w=majority&appName=Cluster0", {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
   .then(() => {
     console.log("MongoDB connected")
-    return UserModel.collection.indexes()
-  })
-  .then((indexes) => {
-    const nameIndex = indexes.find((index) => index.key.name === 1);
-    if (nameIndex) {
-      return UserModel.collection.dropIndex('name_1');
-    }
   })
   .then(() => {
     const PORT = process.env.PORT || 3001;

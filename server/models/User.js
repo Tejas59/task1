@@ -8,25 +8,17 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true, 
+    unique:true,
   },
   password: {
     type: String,
     required: true,
-    minlength: 5,
-  },
-  loginAttempts: {
-    type: Number,
-    default: 0,
-  },
-  lastLoginAttempt: {
-    type: Date,
-    default: null,
+    minlength:5,
   },
   lockedUntil: {
     type: Date,
     default: null,
-  },
+  }
 });
 
 module.exports = mongoose.model('User', userSchema);
