@@ -55,7 +55,6 @@ app.post("/", async (req, res) => {
       });
     }
 
-    console.log('Before bcrypt.compare:', email, password);
     const response = await bcrypt.compare(password, user.password);
     console.log('After bcrypt.compare:', response);
 
@@ -64,9 +63,8 @@ app.post("/", async (req, res) => {
       return res.json({ status: "success", name: user.name });
     } else {
       const now = new Date();
-      const nowISO = now.toISOString();
-      // Log the failed attempt
-      await LoginAttemptModel.create({ email, timestamp: nowISO, outcome: 'failure' });
+      // create the failed login attempt 
+      await LoginAttemptModel.create({ email, timestamp: now, outcome: 'failure' });
 
       const failedAttemptsCount = await LoginAttemptModel.countDocuments({
         email,
@@ -79,6 +77,7 @@ app.post("/", async (req, res) => {
         // Lock the account
         const lockExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await UserModel.findOneAndUpdate({ email }, { lockedUntil: lockExpiry });
+        await LoginAttemptModel.deleteMany({ email, outcome: 'failure' });
         return res.status(403).json({
           message: "Your account is locked due to multiple failed login attempts within the last 24 hours. Please try again later.",
           lockedUntil: lockExpiry
